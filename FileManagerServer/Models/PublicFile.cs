@@ -11,8 +11,8 @@
         public long DownloadCount { get; set; }
         public List<string> Likes { get; set; } = new List<string>();
         public List<Comment> Comments { get; set; } = new List<Comment>();
-        public long FileSize { get; set; } // Размер файла в байтах
-        public string ContentType { get; set; } // MIME-тип файла для предпросмотра
+        public long FileSize { get; set; }
+        public string ContentType { get; set; }
     }
 
     public class Comment

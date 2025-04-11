@@ -9,7 +9,7 @@ namespace FileManagerServer.Data
     {
         private static readonly string BasePath = Path.Combine(Directory.GetCurrentDirectory(), "UserData");
         private static readonly string UsersFile = Path.Combine(BasePath, "users.json");
-        private static readonly object LockObject = new object(); // For thread safety
+        private static readonly object LockObject = new object();
 
         static UserStore()
         {
@@ -37,7 +37,6 @@ namespace FileManagerServer.Data
                 }
                 catch (Exception ex)
                 {
-                    // Log the error (implement logging as needed)
                     Console.WriteLine($"Error loading users: {ex.Message}");
                     return new List<User>();
                 }
@@ -55,9 +54,8 @@ namespace FileManagerServer.Data
                 }
                 catch (Exception ex)
                 {
-                    // Log the error
                     Console.WriteLine($"Error saving users: {ex.Message}");
-                    throw; // Re-throw to handle upstream if needed
+                    throw;
                 }
             }
         }
@@ -86,14 +84,12 @@ namespace FileManagerServer.Data
             if (user == null)
                 return false;
 
-            // Ensure the space exists
             var space = user.Spaces.FirstOrDefault(s => s.Name == spaceName);
             if (space == null)
                 return false;
 
-            // Calculate total storage across all spaces
             long totalUsedStorage = user.Spaces.Sum(s => s.UsedStorage);
-            long limit = user.IsPremium ? 6_000_000_000 : 2_000_000_000; // 6 GB or 2 GB
+            long limit = user.IsPremium ? 6_000_000_000 : 2_000_000_000;
             return totalUsedStorage + fileSize <= limit;
         }
 
@@ -125,13 +121,11 @@ namespace FileManagerServer.Data
             if (user == null || !user.IsBlocked)
                 return false;
 
-            // Если установлена дата окончания блокировки, проверяем её
             if (user.BlockedUntil.HasValue)
             {
                 return DateTime.UtcNow < user.BlockedUntil.Value;
             }
 
-            // Если даты нет - перманентная блокировка
             return true;
         }
 

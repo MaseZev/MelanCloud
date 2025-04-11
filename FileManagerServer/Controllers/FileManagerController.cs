@@ -25,20 +25,18 @@ namespace FileManagerServer.Controllers
         {
             var users = UserStore.LoadUsers();
 
-            // Проверка существования пользователя
             if (users.Any(u => u.Username == registerModel.Username))
                 return BadRequest("Пользователь уже существует");
 
-            // Создаем нового пользователя с дефолтными значениями
             var newUser = new User
             {
                 Username = registerModel.Username,
                 Password = registerModel.Password,
-                IsPremium = false, // По умолчанию не премиум
-                IsAdmin = false,   // По умолчанию не админ
-                IsBlocked = false, // По умолчанию не заблокирован
+                IsPremium = false,
+                IsAdmin = false,
+                IsBlocked = false,
                 Spaces = new List<Space> { new Space { Name = "Private", IsPublic = false } },
-                Subscribers = new List<string>(), // Инициализация списка подписчиков
+                Subscribers = new List<string>(),
                 Subscriptions = new List<string>()
             };
 
@@ -105,7 +103,6 @@ namespace FileManagerServer.Controllers
             if (!existingUser.TwoFactorEnabled)
                 return BadRequest("2FA is not enabled for this account");
 
-            // Verify TOTP or backup code
             if (existingUser.BackupCodes.Contains(model.TwoFACode))
             {
                 existingUser.BackupCodes.Remove(model.TwoFACode);
@@ -160,8 +157,7 @@ namespace FileManagerServer.Controllers
                 return Unauthorized("User not found or blocked");
             if (user == null) return Unauthorized();
 
-            // Проверяем, не превышает ли пользователь лимит пространств (если есть такой лимит)
-            if (user.Spaces.Count >= 10) // Пример: максимум 10 пространств
+            if (user.Spaces.Count >= 10)
                 return BadRequest("Достигнут лимит пространств. Удалите одно из существующих.");
 
             if (user.Spaces.Any(s => s.Name == spaceName))
@@ -186,11 +182,9 @@ namespace FileManagerServer.Controllers
             var users = UserStore.LoadUsers();
             var user = users.FirstOrDefault(u => u.Username == username);
 
-            // Проверка существования пользователя
             if (user == null)
                 return Unauthorized("User not found");
 
-            // Проверка блокировки
             if (user.IsBlocked)
             {
                 var message = user.BlockedUntil.HasValue ?
@@ -199,7 +193,6 @@ namespace FileManagerServer.Controllers
                 return Unauthorized(message);
             }
 
-            // Формируем ответ
             var response = new
             {
                 user.Username,
@@ -236,7 +229,6 @@ namespace FileManagerServer.Controllers
             var space = user.Spaces.FirstOrDefault(s => s.Name == spaceName);
             var userDir = UserStore.GetUserSpaceDirectory(username, spaceName);
 
-            // Декодируем имя файла для корректной обработки русских символов
             var fileName = WebUtility.UrlDecode(file.FileName);
             var filePath = Path.Combine(userDir, fileName);
 
@@ -398,7 +390,6 @@ namespace FileManagerServer.Controllers
             if (!System.IO.File.Exists(fromPath))
                 return NotFound("Source file not found");
 
-            // Проверка лимита хранилища, если перемещение между пространствами
             if (request.FromSpace != request.ToSpace)
             {
                 var fileSize = new FileInfo(fromPath).Length;
@@ -407,33 +398,27 @@ namespace FileManagerServer.Controllers
                     return BadRequest("Not enough storage space in target space");
             }
 
-            // Создаем целевую директорию, если её нет
             var toDir = Path.GetDirectoryName(toPath);
             if (!string.IsNullOrEmpty(toDir) && !Directory.Exists(toDir))
             {
                 Directory.CreateDirectory(toDir);
             }
 
-            // Если файл уже существует в целевой локации, удаляем его
             if (System.IO.File.Exists(toPath))
                 System.IO.File.Delete(toPath);
 
-            // Перемещаем файл
             System.IO.File.Move(fromPath, toPath);
 
-            // Обновляем метаданные и хранилище
             var fileSizeMoved = new FileInfo(toPath).Length;
             var fileMetadata = fromSpace.Files.FirstOrDefault(f => f.Path == request.OldFilePath);
             if (fileMetadata != null)
             {
                 if (request.FromSpace == request.ToSpace)
                 {
-                    // Перемещение внутри пространства: обновляем только путь
                     fileMetadata.Path = request.NewFilePath;
                 }
                 else
                 {
-                    // Перемещение между пространствами: удаляем из старого и добавляем в новое
                     fromSpace.Files.Remove(fileMetadata);
                     fromSpace.UsedStorage -= fileSizeMoved;
                     toSpace.Files.Add(new FileMetadata
@@ -521,17 +506,14 @@ namespace FileManagerServer.Controllers
             var space = user.Spaces.First(s => s.Name == spaceName);
             var userDir = UserStore.GetUserSpaceDirectory(username, spaceName);
 
-            // Получаем все файлы
             var actualFiles = Directory.GetFiles(userDir, "*", SearchOption.AllDirectories)
                 .Select(f => new FileInfo(f))
                 .ToList();
 
-            // Получаем все папки
             var actualFolders = Directory.GetDirectories(userDir, "*", SearchOption.AllDirectories)
                 .Select(d => new DirectoryInfo(d))
                 .ToList();
 
-            // Обновляем метаданные файлов
             foreach (var file in actualFiles)
             {
                 var relativePath = Path.GetRelativePath(userDir, file.FullName);
@@ -554,15 +536,12 @@ namespace FileManagerServer.Controllers
                 }
             }
 
-            // Удаляем метаданные для несуществующих файлов
             space.Files.RemoveAll(f => !actualFiles.Any(af => Path.GetRelativePath(userDir, af.FullName) == f.Path));
 
             UserStore.SaveUsers(users);
 
-            // Формируем результат: файлы и папки
             var result = new List<object>();
 
-            // Добавляем файлы
             result.AddRange(space.Files.Select(f => new
             {
                 Type = "file",
@@ -573,14 +552,13 @@ namespace FileManagerServer.Controllers
                 Path = f.Path
             }));
 
-            // Добавляем папки
             result.AddRange(actualFolders.Select(d => new
             {
                 Type = "folder",
                 Name = d.Name,
-                Size = 0L, // Папки не имеют размера в данном случае
+                Size = 0L,
                 Modified = d.LastWriteTimeUtc,
-                IsPublic = false, // Можно добавить логику для публичности папок
+                IsPublic = false,
                 Path = Path.GetRelativePath(userDir, d.FullName)
             }));
 
@@ -710,7 +688,6 @@ namespace FileManagerServer.Controllers
         [HttpGet("preview")]
         public IActionResult PreviewFile([FromQuery] string username, [FromQuery] string spaceName, [FromQuery] string filename)
         {
-            // Декодируем имя файла из URL
             var decodedFilename = WebUtility.UrlDecode(filename);
 
             var users = UserStore.LoadUsers();
@@ -721,28 +698,25 @@ namespace FileManagerServer.Controllers
                 return Unauthorized();
 
             var userDir = UserStore.GetUserSpaceDirectory(username, spaceName);
-            var filePath = Path.Combine(userDir, decodedFilename); // Используем декодированное имя
+            var filePath = Path.Combine(userDir, decodedFilename);
             if (!System.IO.File.Exists(filePath))
                 return NotFound();
 
             var fileInfo = new FileInfo(filePath);
             string contentType = GetContentType(decodedFilename);
 
-            // Для изображений и видео возвращаем встроенный просмотр
             if (contentType.StartsWith("image/") || contentType.StartsWith("video/") || contentType.StartsWith("audio/"))
             {
-                // Правильное формирование Content-Disposition для UTF-8 имен
                 var contentDisposition = new ContentDispositionHeaderValue("inline")
                 {
                     FileNameStar = decodedFilename,
-                    FileName = Uri.EscapeDataString(decodedFilename) // fallback для старых клиентов
+                    FileName = Uri.EscapeDataString(decodedFilename)
                 };
                 Response.Headers.Add("Content-Disposition", contentDisposition.ToString());
 
                 return PhysicalFile(filePath, contentType, enableRangeProcessing: true);
             }
 
-            // Для текстовых файлов возвращаем содержимое
             if (contentType.StartsWith("text/") ||
                 decodedFilename.EndsWith(".txt") ||
                 decodedFilename.EndsWith(".json") ||
@@ -751,7 +725,6 @@ namespace FileManagerServer.Controllers
                 return Content(System.IO.File.ReadAllText(filePath), contentType);
             }
 
-            // Для остальных типов предлагаем скачать
             return RedirectToAction("DownloadFile", new
             {
                 username,
@@ -1057,14 +1030,12 @@ namespace FileManagerServer.Controllers
         [HttpPost("rename-space")]
         public IActionResult RenameSpace([FromQuery] string username, [FromQuery] string oldSpaceName, [FromQuery] string newSpaceName)
         {
-            // Input validation
             if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(oldSpaceName) || string.IsNullOrWhiteSpace(newSpaceName))
                 return BadRequest("Username, oldSpaceName, and newSpaceName cannot be empty.");
 
             if (oldSpaceName == newSpaceName)
                 return BadRequest("Новое имя должно отличаться от старого.");
 
-            // Load users
             var users = UserStore.LoadUsers();
             var user = users.FirstOrDefault(u => u.Username == username);
             if (user == null || UserStore.IsUserBlocked(username))
@@ -1075,7 +1046,6 @@ namespace FileManagerServer.Controllers
                 return Unauthorized();
             }
 
-            // Find the space to rename
             var space = user.Spaces.FirstOrDefault(s => s.Name == oldSpaceName);
             if (space == null)
             {
@@ -1083,25 +1053,21 @@ namespace FileManagerServer.Controllers
                 return BadRequest("Пространство не найдено");
             }
 
-            // Check if the new name is already taken
             if (user.Spaces.Any(s => s.Name == newSpaceName))
             {
                 Console.WriteLine($"Space name '{newSpaceName}' is already taken for user '{username}'.");
                 return BadRequest("Новое имя уже занято");
             }
 
-            // Get the directories
             var oldDir = UserStore.GetUserSpaceDirectory(username, oldSpaceName);
-            var newDir = Path.Combine(Path.GetDirectoryName(oldDir)!, newSpaceName); // Compute new directory path without creating it
+            var newDir = Path.Combine(Path.GetDirectoryName(oldDir)!, newSpaceName);
 
-            // Check if the old directory exists
             if (!Directory.Exists(oldDir))
             {
                 Console.WriteLine($"Directory for space '{oldSpaceName}' does not exist at '{oldDir}'.");
                 return BadRequest("Директория пространства не найдена");
             }
 
-            // Check if the new directory already exists (shouldn't, but just in case)
             if (Directory.Exists(newDir))
             {
                 Console.WriteLine($"Directory for new space name '{newSpaceName}' already exists at '{newDir}'.");
@@ -1110,29 +1076,24 @@ namespace FileManagerServer.Controllers
 
             try
             {
-                // Rename the directory
                 Console.WriteLine($"Renaming directory from '{oldDir}' to '{newDir}'...");
                 Directory.Move(oldDir, newDir);
                 Console.WriteLine("Directory renamed successfully.");
 
-                // Update the space name in memory
                 var oldName = space.Name;
                 space.Name = newSpaceName;
                 Console.WriteLine($"Space name updated in memory from '{oldName}' to '{space.Name}'.");
 
-                // Save the updated users list
                 Console.WriteLine("Saving users to JSON...");
                 UserStore.SaveUsers(users);
                 Console.WriteLine("Users saved successfully.");
 
-                // Verify the change by reloading the users
                 var reloadedUsers = UserStore.LoadUsers();
                 var reloadedUser = reloadedUsers.FirstOrDefault(u => u.Username == username);
                 var reloadedSpace = reloadedUser?.Spaces.FirstOrDefault(s => s.Name == newSpaceName);
                 if (reloadedSpace == null)
                 {
                     Console.WriteLine($"Failed to verify rename: Space '{newSpaceName}' not found after reload.");
-                    // Rollback directory rename
                     Directory.Move(newDir, oldDir);
                     return BadRequest("Ошибка при сохранении изменений: пространство не обновлено в данных.");
                 }
@@ -1142,7 +1103,6 @@ namespace FileManagerServer.Controllers
             }
             catch (Exception ex)
             {
-                // Log the error and attempt to rollback
                 Console.WriteLine($"Error during rename operation: {ex.Message}");
                 if (Directory.Exists(newDir) && !Directory.Exists(oldDir))
                 {
@@ -1341,7 +1301,7 @@ namespace FileManagerServer.Controllers
                     {
                         ArchiveEncoding = new SharpCompress.Common.ArchiveEncoding
                         {
-                            Password = password != null ? Encoding.UTF8 : null // Fix: Use Encoding.UTF8 for password encoding
+                            Password = password != null ? Encoding.UTF8 : null
                         }
                     };
                     archive.SaveTo(memoryStream, options);
@@ -1460,7 +1420,6 @@ namespace FileManagerServer.Controllers
                 {
                     if (file.FileName.EndsWith(".csv"))
                     {
-                        // Skip header
                         reader.ReadLine();
                         while (!reader.EndOfStream)
                         {
@@ -1533,7 +1492,6 @@ namespace FileManagerServer.Controllers
             if (admin == null || !admin.IsAdmin)
                 return Unauthorized("Требуются права администратора");
 
-            // Возвращаем список пользователей без паролей
             var result = users.Select(u => new {
                 u.Username,
                 u.IsPremium,
@@ -1636,7 +1594,6 @@ namespace FileManagerServer.Controllers
             return Ok($"Premium status {(isPremium ? "granted" : "revoked")} for {username}");
         }
 
-        // 2FA Endpoints
         [HttpPost("enable-2fa")]
         public IActionResult EnableTwoFactorAuth([FromQuery] string username)
         {
@@ -1644,13 +1601,11 @@ namespace FileManagerServer.Controllers
             var user = users.FirstOrDefault(u => u.Username == username);
             if (user == null) return Unauthorized();
 
-            // Generate a secure TOTP secret (20 bytes = 160 bits, standard for TOTP)
             var secretKeyBytes = KeyGeneration.GenerateRandomKey(20);
             var secretKeyBase32 = Base32Encoding.ToString(secretKeyBytes);
 
-            // Generate backup codes (8-digit codes)
             var backupCodes = Enumerable.Range(0, 5)
-                .Select(_ => RandomCode(8)) // Generate 8-digit codes
+                .Select(_ => RandomCode(8))
                 .ToList();
 
             user.TwoFactorSecret = secretKeyBase32;
@@ -1658,12 +1613,10 @@ namespace FileManagerServer.Controllers
             user.BackupCodes = backupCodes;
             UserStore.SaveUsers(users);
 
-            // Return the secret key and backup codes for the user to save
             return Ok(new
             {
                 SecretKey = secretKeyBase32,
                 BackupCodes = user.BackupCodes,
-                // Provide the otpauth URI for QR code generation
                 OtpAuthUri = $"otpauth://totp/MelanCloud:{username}?secret={secretKeyBase32}&issuer=MelanCloud"
             });
         }
@@ -1678,7 +1631,6 @@ namespace FileManagerServer.Controllers
             if (!user.TwoFactorEnabled || string.IsNullOrEmpty(user.TwoFactorSecret))
                 return BadRequest("2FA not enabled for this user");
 
-            // Check if it's a backup code
             if (user.BackupCodes.Contains(code))
             {
                 user.BackupCodes.Remove(code);
@@ -1686,11 +1638,10 @@ namespace FileManagerServer.Controllers
                 return Ok(new { Message = "2FA verification successful using backup code" });
             }
 
-            // Verify TOTP code
             var totp = new Totp(Base32Encoding.ToBytes(user.TwoFactorSecret));
             long timeStepMatched;
             bool isValid = totp.VerifyTotp(code, out timeStepMatched,
-                new VerificationWindow(1, 1)); // Allow 30 seconds before/after
+                new VerificationWindow(1, 1));
 
             if (isValid)
             {
@@ -1719,7 +1670,6 @@ namespace FileManagerServer.Controllers
             return Ok("2FA disabled successfully");
         }
 
-        // Recycle Bin Endpoints
         [HttpPost("delete-to-recycle")]
         public IActionResult DeleteToRecycleBin([FromQuery] string username, [FromQuery] string spaceName, [FromQuery] string filename)
         {
@@ -1737,19 +1687,15 @@ namespace FileManagerServer.Controllers
             if (!System.IO.File.Exists(filePath))
                 return NotFound();
 
-            // Создаем папку для корзины, если её нет
             var recycleDir = Path.Combine(UserStore.GetUserRootDirectory(username), "RecycleBin");
             if (!Directory.Exists(recycleDir))
                 Directory.CreateDirectory(recycleDir);
 
-            // Генерируем уникальное имя для файла в корзине
             var recycleFileName = $"{DateTime.UtcNow.Ticks}_{filename}";
             var recyclePath = Path.Combine(recycleDir, recycleFileName);
 
-            // Перемещаем файл в корзину
             System.IO.File.Move(filePath, recyclePath);
 
-            // Добавляем запись в корзину
             user.RecycleBin.Files.Add(new RecycledFile
             {
                 OriginalPath = filename,
@@ -1759,7 +1705,6 @@ namespace FileManagerServer.Controllers
                 SpaceName = spaceName
             });
 
-            // Обновляем метаданные и хранилище
             var metadata = space.Files.FirstOrDefault(f => f.Path == filename);
             if (metadata != null)
             {
@@ -1794,7 +1739,6 @@ namespace FileManagerServer.Controllers
             if (recycledFile == null)
                 return NotFound("File not found in recycle bin");
 
-            // Проверяем, существует ли еще пространство
             var space = user.Spaces.FirstOrDefault(s => s.Name == recycledFile.SpaceName);
             if (space == null)
                 return BadRequest("Original space no longer exists");
@@ -1807,14 +1751,11 @@ namespace FileManagerServer.Controllers
             if (!System.IO.File.Exists(recyclePath))
                 return NotFound("File not found in recycle bin storage");
 
-            // Проверяем, не существует ли уже файл с таким именем
             if (System.IO.File.Exists(restorePath))
                 return BadRequest("File with this name already exists in the target location");
 
-            // Восстанавливаем файл
             System.IO.File.Move(recyclePath, restorePath);
 
-            // Обновляем метаданные
             space.Files.Add(new FileMetadata
             {
                 Name = Path.GetFileName(recycledFile.OriginalPath),
@@ -1825,7 +1766,6 @@ namespace FileManagerServer.Controllers
             });
             space.UsedStorage += recycledFile.Size;
 
-            // Удаляем запись из корзины
             user.RecycleBin.Files.Remove(recycledFile);
 
             UserStore.SaveUsers(users);
@@ -1853,7 +1793,6 @@ namespace FileManagerServer.Controllers
             return Ok("Recycle bin emptied successfully");
         }
 
-        // Scheduled task to clean old files from recycle bins
         public static void CleanOldRecycledFiles()
         {
             var users = UserStore.LoadUsers();
@@ -1885,7 +1824,6 @@ namespace FileManagerServer.Controllers
             return users.FirstOrDefault(u => u.Username == username && !UserStore.IsUserBlocked(username));
         }
 
-        // Публикация файла на площадку
         [HttpPost("publish-file")]
         public IActionResult PublishFile([FromQuery] string username, [FromQuery] string spaceName, [FromQuery] string filename, [FromBody] string description)
         {
@@ -1897,14 +1835,13 @@ namespace FileManagerServer.Controllers
             var file = space?.Files.FirstOrDefault(f => f.Path == filename);
             if (file == null) return NotFound("File not found");
 
-            // Проверяем, не опубликован ли файл уже
             if (PublicFileStore.GetAll().Any(pf => pf.Username == username && pf.SpaceName == spaceName && pf.FilePath == filename))
                 return BadRequest("File is already published");
 
             var filePath = Path.Combine(UserStore.GetUserSpaceDirectory(username, spaceName), filename);
             if (!System.IO.File.Exists(filePath)) return NotFound("File not found on server");
 
-            file.IsPublic = true; // Делаем файл публичным в пространстве
+            file.IsPublic = true;
             var fileInfo = new FileInfo(filePath);
             var publicFile = new PublicFile
             {
@@ -1913,7 +1850,7 @@ namespace FileManagerServer.Controllers
                 FilePath = filename,
                 Description = description,
                 FileSize = fileInfo.Length,
-                ContentType = GetContentType(filename) // Используем существующую функцию
+                ContentType = GetContentType(filename)
             };
             PublicFileStore.GetAll().Add(publicFile);
             PublicFileStore.SavePublicFiles();
@@ -1921,7 +1858,6 @@ namespace FileManagerServer.Controllers
             return Ok("File published to marketplace");
         }
 
-        // Удаление файла с площадки
         [HttpPost("unpublish-file")]
         public IActionResult UnpublishFile([FromQuery] string username, [FromQuery] string spaceName, [FromQuery] string filename)
         {
@@ -1934,7 +1870,7 @@ namespace FileManagerServer.Controllers
 
             var space = user.Spaces.FirstOrDefault(s => s.Name == spaceName);
             var file = space?.Files.FirstOrDefault(f => f.Path == filename);
-            if (file != null) file.IsPublic = false; // Убираем публичность
+            if (file != null) file.IsPublic = false;
 
             PublicFileStore.GetAll().Remove(publicFile);
             PublicFileStore.SavePublicFiles();
@@ -1942,7 +1878,6 @@ namespace FileManagerServer.Controllers
             return Ok("File removed from marketplace");
         }
 
-        // Просмотр всех публичных файлов
         [HttpGet("public-files")]
         public IActionResult GetPublicFiles([FromQuery] string sortBy = "date", [FromQuery] bool descending = true)
         {
@@ -2079,7 +2014,6 @@ namespace FileManagerServer.Controllers
             return BadRequest("Preview not available for this file type");
         }
 
-        // Скачивание файла с площадки (с учетом статистики)
         [HttpGet("marketplace/download")]
         public IActionResult DownloadMarketplaceFile([FromQuery] string fileId)
         {
@@ -2097,7 +2031,6 @@ namespace FileManagerServer.Controllers
             });
         }
 
-        // Добавление/удаление лайка
         [HttpPost("toggle-like")]
         public IActionResult ToggleLike([FromQuery] string username, [FromQuery] string fileId)
         {
@@ -2119,7 +2052,6 @@ namespace FileManagerServer.Controllers
             return Ok(new { Message = "Like updated", LikesCount = publicFile.Likes.Count, LikedBy = publicFile.Likes });
         }
 
-        // Добавление комментария
         [HttpPost("add-comment")]
         public IActionResult AddComment([FromQuery] string username, [FromQuery] string fileId, [FromBody] string commentText)
         {
@@ -2151,7 +2083,6 @@ namespace FileManagerServer.Controllers
             });
         }
 
-        // Получение статистики файла
         [HttpGet("marketplace/file-stats")]
         public IActionResult GetFileStats([FromQuery] string fileId)
         {
@@ -2171,7 +2102,6 @@ namespace FileManagerServer.Controllers
             });
         }
 
-        // Получение списка опубликованных файлов пользователя
         [HttpGet("my-published-files")]
         public IActionResult GetMyPublishedFiles([FromQuery] string username)
         {
@@ -2287,7 +2217,6 @@ namespace FileManagerServer.Controllers
             var comment = publicFile.Comments.FirstOrDefault(c => c.Id == commentId);
             if (comment == null) return NotFound("Comment not found");
 
-            // Проверяем, что пользователь является автором комментария или владельцем файла
             if (comment.Username != username && publicFile.Username != username)
                 return Unauthorized("You can only delete your own comments");
 
@@ -2306,15 +2235,12 @@ namespace FileManagerServer.Controllers
             var publicFile = PublicFileStore.GetById(fileId);
             if (publicFile == null) return NotFound("File not found in marketplace");
 
-            // Проверяем, что пользователь является владельцем файла
             if (publicFile.Username != username)
                 return Unauthorized("You can only delete your own published files");
 
-            // Удаляем файл из публичного списка
             PublicFileStore.GetAll().Remove(publicFile);
             PublicFileStore.SavePublicFiles();
 
-            // Делаем файл приватным в пространстве пользователя
             var space = user.Spaces.FirstOrDefault(s => s.Name == publicFile.SpaceName);
             if (space != null)
             {
@@ -2332,8 +2258,8 @@ namespace FileManagerServer.Controllers
         public string FromSpace { get; set; }
         public string ToSpace { get; set; }
         public string Filename { get; set; }
-        public string OldFilePath { get; set; } // Старый путь файла (включает папки, если есть)
-        public string NewFilePath { get; set; } // Новый путь файла (включает папки, если есть)
+        public string OldFilePath { get; set; }
+        public string NewFilePath { get; set; }
 
     }
 }

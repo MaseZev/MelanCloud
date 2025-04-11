@@ -6,7 +6,6 @@ namespace FileManagerServer.Controllers
     [Route("web")]
     public class WebInterfaceController : ControllerBase
     {
-        // Serve the HTML file at the /web route
         [HttpGet]
         public IActionResult Index()
         {
@@ -20,7 +19,6 @@ namespace FileManagerServer.Controllers
             return Content(htmlContent, "text/html");
         }
 
-        // Serve the JavaScript file at the /web/module-231fewg341h23j12.js route
         [HttpGet("module-231fewg341h23j12.js")]
         public IActionResult GetJavaScriptFile()
         {

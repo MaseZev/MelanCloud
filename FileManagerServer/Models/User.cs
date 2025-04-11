@@ -35,7 +35,6 @@ namespace FileManagerServer.Models
         public List<string> BackupCodes { get; set; } = new List<string>();
         public RecycleBin RecycleBin { get; set; } = new RecycleBin();
 
-        // Add these new properties
         public List<string> Subscribers { get; set; } = new List<string>();
         public List<string> Subscriptions { get; set; } = new List<string>();
     }

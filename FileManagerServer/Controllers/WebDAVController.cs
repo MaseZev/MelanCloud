@@ -45,16 +45,14 @@ namespace FileManagerServer.Controllers
         public IHttpRequest Request => new AspNetHttpRequest(_context.Request);
         public IHttpResponse Response => new AspNetHttpResponse(_context.Response);
 
-        public IHttpSession Session => null; // WebDAV обычно не использует сессии, оставляем null
+        public IHttpSession Session => null;
 
         public Task CloseAsync()
         {
-            // ASP.NET Core сам управляет закрытием контекста, поэтому просто возвращаем завершенную задачу
             return Task.CompletedTask;
         }
     }
 
-    // Адаптер для запроса
     public class AspNetHttpRequest : IHttpRequest
     {
         private readonly Microsoft.AspNetCore.Http.HttpRequest _request;
@@ -70,12 +68,9 @@ namespace FileManagerServer.Controllers
         public string RemoteEndPoint => _request.HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
         public IEnumerable<string> Headers => _request.Headers.Select(h => h.Key);
         public string GetHeaderValue(string header) => _request.Headers[header].FirstOrDefault();
-
-        // Реализация Stream (возвращаем тот же InputStream)
         public Stream Stream => InputStream;
     }
 
-    // Адаптер для ответа
     public class AspNetHttpResponse : IHttpResponse
     {
         private readonly Microsoft.AspNetCore.Http.HttpResponse _response;
@@ -93,13 +88,12 @@ namespace FileManagerServer.Controllers
 
         public string StatusDescription
         {
-            get => null; // ASP.NET Core не использует это напрямую
-            set { } // Пустая реализация, так как ASP.NET Core не поддерживает установку StatusDescription
+            get => null;
+            set { }
         }
 
         public Stream OutputStream => _response.Body;
 
-        // Реализация Stream (возвращаем тот же OutputStream)
         public Stream Stream => OutputStream;
 
         public void SetHeaderValue(string header, string value)
