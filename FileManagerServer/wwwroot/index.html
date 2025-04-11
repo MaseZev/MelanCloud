@@ -1,0 +1,2073 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Manager - MelanCloud</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #121212;
+            --surface-color: #1E1E1E;
+            --surface-light: #252525;
+            --surface-lighter: #2E2E2E;
+            --primary-color: #FFD700;
+            --primary-hover: #FFC107;
+            --text-primary: #E0E0E0;
+            --text-secondary: #A0A0A0;
+            --border-color: #333333;
+            --border-light: #444444;
+            --card-bg: #252525;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            --sidebar-width: 280px;
+            --header-height: 70px;
+            --transition: all 0.3s ease;
+        }
+
+        .light-theme {
+            --bg-color: #f5f5f5;
+            --surface-color: #ffffff;
+            --surface-light: #f0f0f0;
+            --surface-lighter: #e0e0e0;
+            --primary-color: #1976d2;
+            --primary-hover: #1565c0;
+            --text-primary: #212121;
+            --text-secondary: #757575;
+            --border-color: #e0e0e0;
+            --border-light: #d0d0d0;
+            --card-bg: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .container {
+            display: flex;
+            flex: 1;
+        }
+
+        .auth-container {
+            max-width: 500px;
+            margin: auto;
+            padding: 40px;
+            background-color: var(--surface-color);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+
+        .admin-panel {
+            background-color: var(--surface-color);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        .admin-panel h3 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+
+        .user-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn.admin {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .action-btn.admin:hover {
+            background-color: #c82333;
+        }
+
+        .action-btn.unblock {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .action-btn.unblock:hover {
+            background-color: #218838;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+        .status-active {
+            background-color: #28a745;
+        }
+
+        .status-blocked {
+            background-color: #dc3545;
+        }
+
+        .status-pending {
+            background-color: #ffc107;
+        }
+
+        .auth-container h2 {
+            margin-bottom: 30px;
+            color: var(--primary-color);
+        }
+
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .auth-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            text-align: left;
+        }
+
+        .auth-input {
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background-color: var(--surface-light);
+            color: var(--text-primary);
+            font-size: 15px;
+            transition: var(--transition);
+        }
+
+        .auth-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.2);
+        }
+
+        .auth-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--surface-color);
+            height: calc(100vh - var(--header-height));
+            position: sticky;
+            top: var(--header-height);
+            padding: 20px;
+            border-right: 1px solid var(--border-color);
+            overflow-y: auto;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        header {
+            height: var(--header-height);
+            background-color: var(--surface-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 30px;
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-info {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .btn {
+            background-color: var(--primary-color);
+            color: #1a1a1a;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: var(--transition);
+            font-weight: 500;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            background-color: var(--primary-hover);
+            box-shadow: var(--shadow);
+        }
+
+        .user-info-back {
+            background-color: var(--surface-light);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 10px 20px;
+            border-radius: 8px;
+            transition: var(--transition);
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .btn-secondary {
+            background-color: var(--surface-light);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--surface-lighter);
+            border-color: var(--border-light);
+        }
+
+        .btn-icon {
+            padding: 8px;
+            border-radius: 6px;
+            min-width: 36px;
+            justify-content: center;
+        }
+
+        .action-btn {
+            background-color: var(--surface-light);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .action-btn:hover {
+            background-color: var(--surface-lighter);
+            border-color: var(--border-light);
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            border-color: var(--primary-color);
+            box-shadow: var(--shadow);
+        }
+
+        .card-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .spaces-section {
+            margin-bottom: 30px;
+        }
+
+        .space-list {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .space-card {
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .space-name {
+            font-weight: 600;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .space-meta {
+            font-size: 13px;
+            color: var(--text-secondary);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .space-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .files-section {
+            margin-bottom: 30px;
+        }
+
+        .upload-area {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .file-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .file-card {
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-width: 250px;
+        }
+
+        .file-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+
+        .file-icon {
+            font-size: 24px;
+            color: var(--primary-color);
+        }
+
+        .file-name {
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+        }
+
+        .file-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .drop-zone {
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 20px;
+            transition: var(--transition);
+        }
+
+        .drop-zone.highlight {
+            border-color: var(--primary-color);
+            background-color: rgba(255, 215, 0, 0.1);
+        }
+
+        .drop-zone p {
+            margin-bottom: 15px;
+            color: var(--text-secondary);
+        }
+
+        .drop-zone .btn {
+            margin-top: 10px;
+        }
+
+        .selected-files {
+            margin-top: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+            background-color: var(--surface-light);
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .file-item:last-child {
+            border-bottom: none;
+        }
+
+        .file-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            margin-left: 10px;
+        }
+
+        .file-name {
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .file-size {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .file-progress {
+            width: 100%;
+            margin-top: 5px;
+            height: 6px;
+            border-radius: 3px;
+        }
+
+        .file-progress::-webkit-progress-bar {
+            background-color: var(--surface-color);
+            border-radius: 3px;
+        }
+
+        .file-progress::-webkit-progress-value {
+            background-color: var(--primary-color);
+            border-radius: 3px;
+        }
+
+        .file-remove {
+            color: #ff6b6b;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .upload-summary {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        .progress-container {
+            margin-top: 20px;
+            display: none;
+        }
+
+        progress {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+        }
+
+        progress::-webkit-progress-bar {
+            background-color: var(--surface-light);
+            border-radius: 4px;
+        }
+
+        progress::-webkit-progress-value {
+            background-color: var(--primary-color);
+            border-radius: 4px;
+        }
+
+        .preview-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            padding: 30px;
+        }
+
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .preview-content {
+            flex: 1;
+            background-color: var(--surface-color);
+            border-radius: 8px;
+            padding: 20px;
+            overflow: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .preview-content img, 
+        .preview-content video, 
+        .preview-content audio {
+            max-width: 100%;
+            max-height: 80vh;
+            border-radius: 6px;
+        }
+
+        .preview-content pre {
+            background-color: #000;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            width: 100%;
+            max-height: 70vh;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .archive-list {
+            width: 100%;
+        }
+
+        .archive-item {
+            padding: 10px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .archive-item:hover {
+            background-color: var(--surface-light);
+        }
+
+        .archive-item.nested {
+            padding-left: 30px;
+        }
+
+        .archive-details {
+            color: var(--text-secondary);
+            font-size: 0.9em;
+            margin-left: auto;
+        }
+
+        .folder-toggle {
+            cursor: pointer;
+            color: var(--primary-color);
+            width: 20px;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background-color: var(--surface-light);
+            color: var(--text-primary);
+            font-size: 15px;
+            transition: var(--transition);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.2);
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .flex-grow {
+            flex: 1;
+        }
+
+        .text-muted {
+            color: var(--text-secondary);
+        }
+
+        .text-primary {
+            color: var(--primary-color);
+        }
+
+        .mt-20 {
+            margin-top: 20px;
+        }
+
+        .mb-20 {
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 576px) {
+        body {
+            font-size: 14px;
+        }
+        
+        .btn, .action-btn {
+            padding: 8px 12px;
+            font-size: 13px;
+        }
+        
+        .auth-container {
+            padding: 20px;
+            width: 100%;
+            border-radius: 0;
+            margin: 0;
+            height: 100vh;
+        }
+        
+        .auth-input {
+            padding: 10px 12px;
+        }
+        
+        .auth-actions {
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        header {
+            height: 60px;
+            padding: 0 10px;
+        }
+        
+        .header-left h1 {
+            font-size: 18px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 150px;
+        }
+        
+        .header-right {
+            gap: 8px;
+        }
+        
+        .user-info-back {
+            padding: 6px 10px;
+            font-size: 12px;
+            display: none;
+        }
+        
+        .sidebar {
+            width: 100%;
+            height: auto;
+            position: static;
+            padding: 10px;
+            border-right: none;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .main-content {
+            padding: 15px;
+        }
+        
+        .card-header {
+            padding: 10px 12px;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        
+        .search-container {
+            width: 100%;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+        }
+        
+        .search-input {
+            width: 100%;
+        }
+        
+        .file-list {
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+        
+        .file-card {
+            padding: 10px;
+            min-width: auto;
+        }
+        
+        .file-actions {
+            gap: 5px;
+        }
+        
+        .file-actions .action-btn {
+            padding: 4px 6px;
+            font-size: 12px;
+        }
+        
+        .modal-content {
+            width: 95%;
+            max-width: none;
+            margin: 10px;
+        }
+        
+        .modal-header {
+            padding: 15px;
+        }
+        
+        .modal-body {
+            padding: 15px;
+        }
+        
+        .modal-footer {
+            padding: 15px;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .drop-zone {
+            padding: 15px;
+        }
+        
+        .upload-area {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+        }
+        
+        .multi-actions {
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        
+        .preview-container {
+            padding: 15px;
+        }
+        
+        .preview-header {
+            margin-bottom: 10px;
+        }
+        
+        .public-file-card {
+            padding: 10px;
+        }
+        
+        .public-file-actions {
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        
+        .file-details-page {
+            padding: 10px;
+        }
+        
+        .file-details-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        
+        .file-details-stats {
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .user-table th, .user-table td {
+            padding: 6px;
+            font-size: 12px;
+        }
+        
+        .sort-dropdown {
+            position: static;
+        }
+        
+        .sort-content {
+            position: static;
+            width: 100%;
+            box-shadow: none;
+            border: 1px solid var(--border-color);
+            margin-top: 5px;
+        }
+        
+        .file-input-wrapper button {
+            width: 100%;
+        }
+        
+        .user-info {
+            display: none;
+        }
+        
+        .header-right .btn-icon {
+            min-width: 30px;
+            padding: 5px;
+        }
+        
+        .space-card {
+            padding: 8px;
+        }
+        
+        .space-actions {
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+    }
+
+    @media (max-width: 400px) {
+        .header-left h1 {
+            max-width: 120px;
+        }
+        
+        .header-right {
+            gap: 5px;
+        }
+        
+        .btn-icon {
+            min-width: 28px;
+        }
+        
+        .file-actions {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+    }
+
+    .mobile-menu-btn {
+        display: none;
+    }
+
+    @media (max-width: 992px) {
+        .mobile-menu-btn {
+            display: flex;
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            font-size: 20px;
+            cursor: pointer;
+        }
+        
+        .sidebar {
+            display: none;
+        }
+        
+        .sidebar.active {
+            display: block;
+        }
+    }
+        
+
+        .search-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-left: auto;
+        }
+
+        .search-input {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background-color: var(--surface-light);
+            color: var(--text-primary);
+            font-size: 14px;
+            width: 200px;
+            transition: var(--transition);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.2);
+        }
+
+        .sort-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .sort-btn {
+            background-color: var(--surface-light);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .sort-btn:hover {
+            background-color: var(--surface-lighter);
+        }
+
+        .sort-content {
+            display: none;
+            position: absolute;
+            background-color: var(--surface-color);
+            min-width: 160px;
+            box-shadow: var(--shadow);
+            z-index: 1;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            right: 0;
+        }
+
+        .sort-content button {
+            color: var(--text-primary);
+            padding: 8px 16px;
+            text-decoration: none;
+            display: block;
+            background: none;
+            border: none;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .sort-content button:hover {
+            background-color: var(--surface-lighter);
+        }
+
+        .sort-dropdown:hover .sort-content {
+            display: block;
+        }
+
+        .file-card.selected {
+            border-color: var(--primary-color);
+            background-color: rgba(255, 215, 0, 0.1);
+        }
+
+        .multi-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .multi-actions.active {
+            display: flex;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        .folder-content {
+            margin-left: 20px;
+            display: none;
+        }
+
+        .folder-toggle {
+            cursor: pointer;
+            margin-right: 5px;
+            width: 15px;
+            display: inline-block;
+        }
+
+        .file-card {
+            margin-bottom: 5px;
+        }
+
+        #qrcode {
+            margin: 0 auto 20px;
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        #2faSecretKey, #2faBackupCodes {
+            user-select: all;
+            -webkit-user-select: all;
+            -moz-user-select: all;
+            -ms-user-select: all;
+        }
+
+        .recycled-file {
+            border-left: 3px solid var(--primary-color);
+            padding-left: 10px;
+            margin-bottom: 15px;
+        }
+
+        .recycled-file-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .public-file-card {
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .public-file-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+
+        .public-file-meta {
+            font-size: 13px;
+            color: var(--text-secondary);
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .public-file-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .comments-section {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .comment-input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background-color: var(--surface-light);
+            color: var(--text-primary);
+            margin-bottom: 10px;
+        }
+
+        .comment-list {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 5px;
+        }
+
+        .comment {
+            padding: 8px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 14px;
+        }
+
+        .comment:last-child {
+            border-bottom: none;
+        }
+
+        .like-btn.liked {
+            color: var(--primary-color);
+        }
+
+        .file-details-page {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .file-details-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .file-details-content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .file-details-preview {
+            background-color: var(--surface-color);
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 300px;
+        }
+
+        .file-details-info {
+            background-color: var(--surface-color);
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .file-details-stats {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .user-link {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+        .user-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container" id="authContainer">
+        <h2>Welcome to MelanCloud</h2>
+        <div class="auth-form" id="auth-form">
+            <div class="auth-input-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" class="auth-input" placeholder="Enter your username">
+            </div>
+            <div class="auth-input-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" class="auth-input" placeholder="Enter your password">
+            </div>
+            <div class="auth-actions">
+                <button class="btn" onclick="login()">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </button>
+                <button class="btn btn-secondary" onclick="register()">
+                    <i class="fas fa-user-plus"></i> Register
+                </button>
+            </div>
+        </div>
+        <div class="authform hidden" id="2faForm">
+            <h3>Two-Factor Authentication</h3>
+            <div class="auth-input-group">
+                <label for="twoFACode">Verification Code</label>
+                <input type="text" id="twoFACode" class="auth-input" placeholder="Enter 6-digit code">
+            </div>
+            <button class="btn" onclick="verify2FA()">
+                <i class="fas fa-check"></i> Verify
+            </button>
+            <button class="btn btn-secondary" onclick="showAuthForm()">
+                <i class="fas fa-arrow-left"></i> Back
+            </button>
+        </div>
+    </div>
+
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            sidebar.classList.toggle('active');
+        }
+        
+        document.addEventListener('click', function(event) {
+            const sidebar = document.querySelector('.sidebar');
+            const menuBtn = document.querySelector('.mobile-menu-btn');
+            
+            if (!sidebar.contains(event.target) && !menuBtn.contains(event.target)) {
+                sidebar.classList.remove('active');
+            }
+        });
+        
+        function switchSpace(spaceName) {
+            currentSpace = spaceName;
+            currentSpaceElement.textContent = spaceName;
+            previewContainer.classList.add('hidden');
+            loadFiles();
+            
+            if (window.innerWidth <= 992) {
+                document.querySelector('.sidebar').classList.remove('active');
+            }
+        }
+    </script>
+
+    <div class="hidden" id="mainContainer">
+        <header>
+            <div class="header-left">
+                <button class="mobile-menu-btn" onclick="toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h1><i class="fas fa-cloud text-primary"></i> MelanCloud</h1>
+                <div class="user-info user-info-back" id="userInfo"></div>
+                <button class="btn btn-secondary hidden" id="adminPanelBtn" onclick="showAdminPanel()">
+                    <i class="fas fa-user-shield"></i> <span class="desktop-text">Admin Panel</span>
+                </button>
+            </div>
+            <div class="header-right">
+                <button class="btn btn-secondary btn-icon" onclick="showPublicFilesPage()" title="Public Files">
+                    <i class="fas fa-globe"></i> <span class="desktop-text">Public Files</span>
+                </button>
+                <button class="btn btn-secondary btn-icon" onclick="showRecycleBin()" title="Recycle Bin">
+                    <i class="fas fa-trash-restore"></i> <span class="desktop-text">Recycle Bin</span>
+                </button>
+                <button class="btn btn-secondary btn-icon" onclick="showSettingsModal()" title="Settings">
+                    <i class="fas fa-cog"></i> <span class="desktop-text">Settings</span>
+                </button>
+            </div>
+        </header>
+
+        <div class="container">
+            <aside class="sidebar">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-folder-open"></i> Spaces</h3>
+                        <button class="btn-icon btn-secondary" onclick="showCreateSpaceModal()">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="space-list" id="spaceList"></div>
+                    </div>
+                </div>
+            </aside>
+
+            <main class="main-content">
+                <section class="files-section">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-file-alt"></i> Files in <span id="currentSpace">[No Space Selected]</span></h3>
+                            <div class="search-container">
+                                <input type="text" id="searchInput" class="search-input" placeholder="Search files...">
+                                <div class="checkbox-group">
+                                    <input type="checkbox" id="searchContent">
+                                    <label for="searchContent">Search in content</label>
+                                </div>
+                                <div class="sort-dropdown">
+                                    <button class="sort-btn"><i class="fas fa-sort"></i> Sort</button>
+                                    <div class="sort-content">
+                                        <button onclick="sortFiles('name', 'asc')">Name (A-Z)</button>
+                                        <button onclick="sortFiles('name', 'desc')">Name (Z-A)</button>
+                                        <button onclick="sortFiles('modified', 'desc')">Date (Newest)</button>
+                                        <button onclick="sortFiles('modified', 'asc')">Date (Oldest)</button>
+                                        <button onclick="sortFiles('size', 'desc')">Size (Largest)</button>
+                                        <button onclick="sortFiles('size', 'asc')">Size (Smallest)</button>
+                                        <button onclick="sortFiles('type', 'asc')">Type (A-Z)</button>
+                                        <button onclick="sortFiles('type', 'desc')">Type (Z-A)</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="drop-zone" id="dropZone">
+                                <p>Drag & drop files here to upload</p>
+                                <div class="file-input-wrapper">
+                                    <button class="btn">
+                                        <i class="fas fa-cloud-upload-alt"></i> Choose Files
+                                    </button>
+                                    <input type="file" id="fileInput" multiple>
+                                </div>
+                            </div>
+                            
+                            <div class="selected-files hidden" id="selectedFiles">
+                                <div class="upload-summary">
+                                    <span>Selected files: <span id="fileCount">0</span></span>
+                                    <span>Total size: <span id="totalSize">0 B</span></span>
+                                </div>
+                                <div id="fileListContainer"></div>
+                            </div>
+
+                            
+                            
+                            <div class="upload-area">
+                                <button class="btn" id="uploadBtn" onclick="uploadFiles()">
+                                    <i class="fas fa-upload"></i> Upload
+                                </button>
+                                <button class="btn" onclick="createFolderPrompt()">
+                                    <i class="fas fa-folder-plus"></i> New Folder
+                                </button>
+                                <button class="btn btn-secondary" id="cancelUploadBtn" onclick="cancelUpload()" style="display: none;">
+                                    <i class="fas fa-times"></i> Cancel
+                                </button>
+                            </div>
+                            
+                            <div class="progress-container" id="uploadProgressContainer">
+                                <div class="upload-summary">
+                                    <span>Uploading: <span id="currentUploadFile">-</span></span>
+                                    <span>Progress: <span id="uploadPercentage">0%</span></span>
+                                </div>
+                                <progress id="uploadProgress" max="100" value="0"></progress>
+                                <div class="text-muted mt-20" id="uploadStatus"></div>
+                            </div>
+
+                            <div class="multi-actions" id="multiActions">
+                                <button class="action-btn" onclick="deleteSelectedFiles()">
+                                    <i class="fas fa-trash"></i> Delete Selected
+                                </button>
+                                <button class="action-btn" onclick="downloadSelectedFiles()">
+                                    <i class="fas fa-download"></i> Download Selected
+                                </button>
+                                <button class="action-btn" onclick="moveSelectedFilesPrompt()">
+                                    <i class="fas fa-folder"></i> Move Selected
+                                </button>
+                                <button class="action-btn" onclick="copySelectedFilesPrompt()">
+                                    <i class="fas fa-copy"></i> Copy Selected
+                                </button>
+                                <button class="action-btn" onclick="createArchivePrompt()">
+                                    <i class="fas fa-file-archive"></i> Create Archive
+                                </button>
+                            </div>
+                            <script>
+                                async function createArchivePrompt() {
+                                    if (selectedFileNames.size === 0) {
+                                        alert('No files selected.');
+                                        return;
+                                    }
+                                    const archiveName = prompt('Enter archive name (without extension):', 'archive');
+                                    if (archiveName) {
+                                        const password = prompt('Enter password for archive (optional, leave blank for none):');
+                                        try {
+                                            const url = `/api/filemanager/create-archive?username=${currentUsername}&spaceName=${currentSpace}&archiveName=${encodeURIComponent(archiveName)}${password ? `&password=${encodeURIComponent(password)}` : ''}`;
+                                            const response = await fetch(url, {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify(Array.from(selectedFileNames))
+                                            });
+                                            if (response.ok) {
+                                                loadFiles();
+                                            } else {
+                                                const error = await response.text();
+                                                alert(`Failed to create archive: ${error}`);
+                                            }
+                                        } catch (error) {
+                                            alert('Error creating archive.');
+                                        }
+                                    }
+                                }
+                                </script>
+                            
+                            <div class="file-list" id="fileList"></div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <div class="hidden" id="publicFilesContainer">
+        <header>
+            <div class="header-left">
+                <h1><i class="fas fa-globe text-primary"></i> Public Files</h1>
+            </div>
+            <div class="header-right">
+                <button class="btn btn-secondary" onclick="showMain()">
+                    <i class="fas fa-arrow-left"></i> Back to Files
+                </button>
+                <button class="btn btn-secondary" onclick="toggleTheme()">
+                    <i class="fas fa-moon"></i> Dark Mode
+                </button>
+            </div>
+        </header>
+        <div class="container">
+            <main class="main-content">
+                <section class="public-files-section">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-file-alt"></i> All Public Files</h3>
+                            <div class="search-container">
+                                <input type="text" id="publicSearchInput" class="search-input" placeholder="Search public files...">
+                                <div class="sort-dropdown">
+                                    <button class="sort-btn"><i class="fas fa-sort"></i> Sort</button>
+                                    <div class="sort-content">
+                                        <button onclick="sortPublicFiles('name', 'asc')">Name (A-Z)</button>
+                                        <button onclick="sortPublicFiles('name', 'desc')">Name (Z-A)</button>
+                                        <button onclick="sortPublicFiles('date', 'desc')">Date (Newest)</button>
+                                        <button onclick="sortPublicFiles('date', 'asc')">Date (Oldest)</button>
+                                        <button onclick="sortPublicFiles('likes', 'desc')">Likes (Most)</button>
+                                        <button onclick="sortPublicFiles('downloads', 'desc')">Downloads (Most)</button>
+                                    </div>
+                                </div>
+                                <button class="btn btn-secondary" onclick="showPublishFilesModal()">
+                                    <i class="fas fa-cloud-upload-alt"></i> Publish Files
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="file-list" id="publicFilesList"></div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <div class="hidden" id="fileDetailsContainer">
+        <header>
+            <div class="header-left">
+                <button class="btn btn-secondary" onclick="showPublicFilesPage()">
+                    <i class="fas fa-arrow-left"></i> Back to Public Files
+                </button>
+            </div>
+            <div class="header-right">
+                <button class="btn btn-secondary" onclick="toggleTheme()">
+                    <i class="fas fa-moon"></i> Dark Mode
+                </button>
+            </div>
+        </header>
+        
+        <div class="container">
+            <main class="main-content">
+                <div class="file-details-page">
+                    <div class="file-details-header">
+                        <i class="fas fa-file-alt fa-3x text-primary"></i>
+                        <div>
+                            <h2 id="fileDetailsTitle"></h2>
+                            <div class="text-muted" id="fileDetailsAuthor"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="file-details-content">
+                        <div class="file-details-preview" id="fileDetailsPreview">
+                        </div>
+                        
+                        <div class="file-details-info">
+                            <h3>Description</h3>
+                            <p id="fileDetailsDescription"></p>
+                            
+                            <div class="file-details-stats">
+                                <div class="stat-item">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    <span id="fileDetailsDate"></span>
+                                </div>
+                                <div class="stat-item">
+                                    <i class="fas fa-download"></i>
+                                    <span id="fileDetailsDownloads"></span>
+                                </div>
+                                <div class="stat-item">
+                                    <i class="fas fa-heart"></i>
+                                    <span id="fileDetailsLikes"></span>
+                                </div>
+                                <div class="stat-item">
+                                    <i class="fas fa-comment"></i>
+                                    <span id="fileDetailsCommentsCount"></span>
+                                </div>
+                            </div>
+                            
+                            <div class="file-actions mt-20" id="fileDetailsActions">
+                                <button class="btn" id="fileDetailsLikeBtn" onclick="toggleLike(currentFileId)">
+                                    <i class="fas fa-heart"></i> Like
+                                </button>
+                                <button class="btn btn-secondary" onclick="downloadPublicFile(currentFileId)">
+                                    <i class="fas fa-download"></i> Download
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="comments-section">
+                            <h3>Comments</h3>
+                            <textarea class="comment-input" placeholder="Add a comment..." id="fileDetailsCommentInput"></textarea>
+                            <button class="btn" onclick="addComment(currentFileId, 'fileDetailsCommentInput')">
+                                <i class="fas fa-comment"></i> Post Comment
+                            </button>
+                            <div class="comment-list" id="fileDetailsComments">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <div class="modal hidden" id="publishFilesModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-cloud-upload-alt"></i> Publish Files</h3>
+                <button class="btn-icon btn-secondary" onclick="closeModal('publishFilesModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label" for="publishSpaceSelect">Select Space</label>
+                    <select id="publishSpaceSelect" class="form-control" onchange="loadFilesForPublishing()">
+                        <option value="">Select a space</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Select Files to Publish</label>
+                    <div class="file-list" id="publishFileList" style="max-height: 200px; overflow-y: auto;"></div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="publishDescription">Description</label>
+                    <textarea id="publishDescription" class="form-control" placeholder="Enter description for these files"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="publishSelectedFiles()">
+                    <i class="fas fa-check"></i> Publish
+                </button>
+                <button class="btn btn-secondary" onclick="closeModal('publishFilesModal')">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal hidden" id="recycleBinModal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-trash-restore"></i> Recycle Bin</h3>
+                <button class="btn-icon btn-secondary" onclick="closeModal('recycleBinModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Retention Period</label>
+                    <select id="retentionDays" class="form-control" onchange="updateRetentionDays()">
+                        <option value="7">7 days</option>
+                        <option value="14">14 days</option>
+                        <option value="30" selected>30 days</option>
+                        <option value="60">60 days</option>
+                        <option value="90">90 days</option>
+                    </select>
+                </div>
+                <div class="file-list" id="recycledFilesList"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="emptyRecycleBin()">
+                    <i class="fas fa-trash"></i> Empty Recycle Bin
+                </button>
+                <button class="btn btn-secondary" onclick="closeModal('recycleBinModal')">
+                    <i class="fas fa-times"></i> Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal hidden" id="twoFAModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-shield-alt"></i> Two-Factor Authentication</h3>
+                <button class="btn-icon btn-secondary" onclick="closeModal('twoFAModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="2faSetupContainer" class="hidden">
+                    <p>Scan this QR code with your authenticator app:</p>
+                    <div id="qrcode" style="width:200px; height:200px; margin: 0 auto;"></div>
+                    <p>Or enter this secret key manually:</p>
+                    <div class="form-control" id="2faSecretKey" style="text-align: center; font-family: monospace; margin-bottom: 15px;"></div>
+                    <p>Backup codes (save these in a safe place):</p>
+                    <div class="form-control" id="2faBackupCodes" style="font-family: monospace; height: 100px; overflow-y: auto;"></div>
+                    <div class="form-group mt-20">
+                        <label class="form-label">Verification Code</label>
+                        <input type="text" id="2faVerifyCode" class="form-control" placeholder="Enter code from app">
+                    </div>
+                    <button class="btn" onclick="verify2FASetup()">
+                        <i class="fas fa-check"></i> Verify & Enable
+                    </button>
+                </div>
+                <div id="2faStatusContainer">
+                    <p>Two-factor authentication is <span id="2faStatusText">disabled</span>.</p>
+                    <button class="btn" id="toggle2FAButton" onclick="toggle2FA()">
+                        <i class="fas fa-shield-alt"></i> Enable 2FA
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('twoFAModal')">
+                    <i class="fas fa-times"></i> Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal hidden" id="adminPanelModal">
+        <div class="modal-content" style="max-width: 1200px; max-height: 90vh; display: flex; flex-direction: column;">
+            <div class="modal-header">
+                <h3><i class="fas fa-user-shield"></i> Admin Panel</h3>
+                <button class="btn-icon btn-secondary" onclick="closeModal('adminPanelModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" style="flex: 1; overflow: hidden; display: flex; flex-direction: column;">
+                <div class="form-group">
+                    <input type="text" id="adminSearchInput" class="form-control" placeholder="Search users..." 
+                           oninput="filterAdminUsers()">
+                </div>
+                
+                <div class="table-container" style="flex: 1; overflow: hidden; display: flex; flex-direction: column;">
+                    <div class="table-responsive" style="flex: 1; overflow-y: auto;">
+                        <table class="user-table">
+                            <thead>
+                                <tr>
+                                    <th>Username</th>
+                                    <th>Premium</th>
+                                    <th>Admin</th>
+                                    <th>Status</th>
+                                    <th>Storage</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminUsersList">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="form-group mt-20">
+                    <h4>Block User</h4>
+                    <div class="form-group">
+                        <label class="form-label">Username</label>
+                        <input type="text" id="blockUsername" class="form-control" placeholder="Enter username">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Reason</label>
+                        <input type="text" id="blockReason" class="form-control" placeholder="Enter reason">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Block Duration (days, leave empty for permanent)</label>
+                        <input type="number" id="blockDays" class="form-control" placeholder="Days">
+                    </div>
+                    <button class="btn" onclick="blockUser()">
+                        <i class="fas fa-lock"></i> Block User
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('adminPanelModal')">
+                    <i class="fas fa-times"></i> Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal hidden" id="profileModal">
+        <div class="modal-content" style="max-width: 800px; max-height: 90vh; display: flex; flex-direction: column;">
+            <div class="modal-header">
+                <h3><i class="fas fa-user"></i> User Profile: <span id="profileUsername"></span></h3>
+                <button class="btn-icon btn-secondary" onclick="closeModal('profileModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" style="flex: 1; overflow-y: auto;">
+                <div class="profile-info">
+                    <p><strong>Subscribers:</strong> <span id="profileSubscribersCount">0</span></p>
+                    <p><strong>Subscriptions:</strong> <span id="profileSubscriptionsCount">0</span></p>
+                    <p><strong>Premium:</strong> <span id="profileIsPremium">No</span></p>
+                </div>
+                <div class="subscription-actions" id="subscriptionActions">
+                    <button class="btn" id="subscribeBtn" onclick="subscribeToUser()">
+                        <i class="fas fa-user-plus"></i> Subscribe
+                    </button>
+                    <button class="btn btn-secondary" id="unsubscribeBtn" onclick="unsubscribeFromUser()" style="display: none;">
+                        <i class="fas fa-user-minus"></i> Unsubscribe
+                    </button>
+                </div>
+                <div class="public-files-section mt-20">
+                    <h4>Public Files</h4>
+                    <div class="file-list" id="publicFilesList"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('profileModal')">
+                    <i class="fas fa-times"></i> Close
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <style>
+        .user-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        
+        .user-table th, .user-table td {
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            text-align: left;
+        }
+        
+        .user-table th {
+            background-color: var(--surface-light);
+            font-weight: 600;
+        }
+        
+        .user-table tr:nth-child(even) {
+            background-color: var(--surface-light);
+        }
+        
+        .user-table tr:hover {
+            background-color: var(--surface-lighter);
+        }
+        
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-active {
+            background-color: rgba(40, 167, 69, 0.2);
+            color: #28a745;
+        }
+        
+        .status-blocked {
+            background-color: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+        }
+        
+        .admin-badge {
+            background-color: rgba(0, 123, 255, 0.2);
+            color: #007bff;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .premium-badge {
+            background-color: rgba(255, 193, 7, 0.2);
+            color: var(--primary-color);
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+    </style>
+    
+    <div class="modal hidden" id="notificationSettingsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-bell"></i> Notification Settings</h3>
+                <button class="btn-icon btn-secondary" onclick="closeModal('notificationSettingsModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Notification Methods</label>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="emailNotifications">
+                        <label for="emailNotifications">Email Notifications</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="browserNotifications">
+                        <label for="browserNotifications">Browser Notifications</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Notification Events</label>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="onUpload">
+                        <label for="onUpload">When files are uploaded</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="onDownload">
+                        <label for="onDownload">When files are downloaded</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="onSpaceFull">
+                        <label for="onSpaceFull">When storage space is almost full</label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="saveNotificationSettings()">
+                    <i class="fas fa-save"></i> Save
+                </button>
+                <button class="btn btn-secondary" onclick="closeModal('notificationSettingsModal')">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal hidden" id="pluginModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-puzzle-piece"></i> Load Plugin</h3>
+                <button class="btn-icon btn-secondary" onclick="closeModal('pluginModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Plugin DLL File</label>
+                    <input type="file" id="pluginFileInput" accept=".dll" class="form-control">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="uploadPlugin()">
+                    <i class="fas fa-upload"></i> Upload & Load
+                </button>
+                <button class="btn btn-secondary" onclick="closeModal('pluginModal')">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal hidden" id="moveFileModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-arrow-right"></i> Move File</h3>
+                <button class="btn-icon btn-secondary" onclick="closeMoveFileModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Moving:</label>
+                    <span id="moveFileName" class="form-control" style="display: block; background: #f5f5f5; border: none;"></span>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="targetSpace">Target Space</label>
+                    <select id="targetSpace" class="form-control" onchange="updateTargetFolders()">
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="targetLocation">Target Folder (optional)</label>
+                    <select id="targetLocation" class="form-control">
+                        <option value="">Space Root</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="confirmMoveFile()">
+                    <i class="fas fa-check"></i> Move
+                </button>
+                <button class="btn btn-secondary" onclick="closeMoveFileModal()">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="preview-container hidden" id="previewContainer">
+        <div class="preview-header">
+            <h3><i class="fas fa-file-alt"></i> Preview: <span id="previewFileName"></span></h3>
+            <button class="btn btn-secondary" onclick="closePreview()">
+                <i class="fas fa-times"></i> Close
+            </button>
+        </div>
+        <div class="preview-content" id="previewContent"></div>
+    </div>
+
+    <div class="modal hidden" id="createSpaceModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-folder-plus"></i> Create New Space</h3>
+                <button class="btn-icon btn-secondary" onclick="closeModal('createSpaceModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label" for="newSpaceName">Space Name</label>
+                    <input type="text" id="newSpaceName" class="form-control" placeholder="Enter space name">
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="isPublic">
+                    <label for="isPublic">Make this space public</label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="createSpace()">
+                    <i class="fas fa-check"></i> Create Space
+                </button>
+                <button class="btn btn-secondary" onclick="closeModal('createSpaceModal')">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal hidden" id="settingsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-cog"></i> Settings</h3>
+                <button class="btn-icon btn-secondary" onclick="closeModal('settingsModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="account-info mb-20">
+                    <h4><i class="fas fa-user"></i> Account Information</h4>
+                    <div id="settingsAccountInfo"></div>
+                </div>
+                
+                <div class="settings-section mb-20">
+                    <h4><i class="fas fa-bell"></i> Notifications</h4>
+                    <button class="btn btn-secondary" onclick="showNotificationSettings()">
+                        <i class="fas fa-bell"></i> Notification Settings
+                    </button>
+                </div>
+                
+                <div class="settings-section mb-20">
+                    <h4><i class="fas fa-shield-alt"></i> Security</h4>
+                    <button class="btn btn-secondary" onclick="show2FAModal()">
+                        <i class="fas fa-shield-alt"></i> Two-Factor Authentication
+                    </button>
+                </div>
+                
+                <div class="settings-section mb-20">
+                    <h4><i class="fas fa-palette"></i> Appearance</h4>
+                    <button class="btn btn-secondary" id="themeToggleSettings" onclick="toggleTheme()">
+                        <i class="fas fa-moon"></i> Dark Mode
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+                <button class="btn btn-secondary" onclick="closeModal('settingsModal')">
+                    <i class="fas fa-times"></i> Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background-color: var(--surface-color);
+            border-radius: 12px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .modal-footer {
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+        }
+
+        .modal-content h2 {
+            margin-top: 0;
+        }
+
+        .close {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 8px;
+            margin: 10px 0;
+        }
+    </style>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://unpkg.com/mammoth@1.4.2/mammoth.browser.min.js"></script>
+    <script src="/web/module-231fewg341h23j12.js"></script>
+</body>
+</html>
